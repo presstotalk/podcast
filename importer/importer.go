@@ -48,6 +48,5 @@ func (i Importer) Import(id string, feedURL string) error {
 		}
 	}
 
-	return nil
-	//return i.uploadFiles(podcast)
+	return i.uploadFiles(podcast)
 }
