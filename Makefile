@@ -10,4 +10,8 @@ build:
 
 .PHONY: deploy
 deploy:
-	@gcloud run deploy api --region=asia-east1 --image=${IMAGE_TAG}
+	@gcloud run deploy api \
+		--no-use-http2 \
+		--region=asia-east1 \
+		--env-vars-file=.env \
+		--image=${IMAGE_TAG}
