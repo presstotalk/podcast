@@ -19,6 +19,11 @@ export default {
 		env: Env,
 		ctx: ExecutionContext
 	): Promise<Response> {
+    const cachedFile = await caches.default.match(request)
+    if (cachedFile) {
+      return cachedFile
+    }
+
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response('method not allowed', { status: 405 })
     }
@@ -33,7 +38,14 @@ export default {
     const url = genOneDriveUrl(env, pathname)
     const res = await fetchFileData(url, accessToken)
     const headerOnly = request.method === "HEAD"
-    return fetchOneDriveFile(res, headerOnly)
+    const fileRes = await fetchOneDriveFile(res, headerOnly)
+    fileRes.headers.set('Cache-Control', 'public')
+
+    if (request.method === 'GET') {
+      await caches.default.put(request, fileRes.clone())
+    }
+
+    return fileRes
 	},
 }
 
@@ -51,7 +63,7 @@ async function getAccessToken(env: Env): Promise<string | null> {
 }
 
 function genOneDriveUrl(env: Env, pathname: string): string {
-  return `${DRIVE_API_ENDPOINT}/root${wrapPathName(env, pathname)}?select=id,folder,file,%40microsoft.graph.downloadUrl&expand=children(select%3Did,folder,file)`;
+  return `${DRIVE_API_ENDPOINT}/root${wrapPathName(env, pathname)}?select=id,etag,folder,file,%40microsoft.graph.downloadUrl&expand=children(select%3Did,etag,folder,file)`;
 }
 
 function wrapPathName(env: Env, pathname: string): string {
