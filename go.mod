@@ -13,6 +13,7 @@ require (
 
 require (
 	github.com/PuerkitoBio/goquery v1.5.1 // indirect
+	github.com/amalfra/etag/v2 v2.0.0 // indirect
 	github.com/andybalholm/cascadia v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/labstack/echo/v4 v4.10.0 // indirect

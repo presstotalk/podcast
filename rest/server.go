@@ -1,8 +1,12 @@
 package rest
 
 import (
+	"bytes"
+	"net/http"
 	"os"
+	"time"
 
+	"github.com/amalfra/etag/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/ninan.fm/podcast/database"
 	"github.com/ninan.fm/podcast/feed"
@@ -34,7 +38,9 @@ func Start() error {
 		}
 
 		c.Response().Header().Set("Content-Type", "application/rss+xml; charset=utf-8")
-		c.Response().Write(content)
+		c.Response().Header().Set("ETag", etag.Generate(string(content), true))
+
+		http.ServeContent(c.Response(), c.Request(), "podcast", time.Now(), bytes.NewReader(content))
 
 		return nil
 	})

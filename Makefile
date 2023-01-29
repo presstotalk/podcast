@@ -2,6 +2,11 @@ VERSION := v1.0.0
 IMAGE_TAG := "asia.gcr.io/presstotalk/api:${VERSION}"
 
 
+.PHONY: run
+run:
+	@go run cmd/server/main.go
+
+
 .PHONY: build
 build:
 	@docker buildx build --platform linux/amd64 -t ${IMAGE_TAG} .
