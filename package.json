@@ -1,0 +1,11 @@
+{
+  "name": "podcast",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:pycxxx/presstotalk.git",
+  "author": "pycxxx <pyc@mykitties.life>",
+  "license": "GPL",
+  "dependencies": {
+    "wrangler": "^2.8.1"
+  }
+}

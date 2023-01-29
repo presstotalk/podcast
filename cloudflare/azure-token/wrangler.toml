@@ -1,0 +1,16 @@
+name = "azure-token"
+main = "src/index.ts"
+compatibility_date = "2023-01-29"
+kv_namespaces = [
+    { binding = "AZURE", id = "8614081e75f54a21af058dc6a5e823f3", preview_id = "d5bc770724ca4ff7b9ca6dfea0015c72" }
+]
+
+[triggers]
+crons = [ "*/30 * * * *" ]
+
+[vars]
+AZURE_REDIRECT_URL = "http://localhost:3000"
+# The necessary secrets are:
+# - AZURE_CLIENT_ID
+# - AZURE_CLIENT_SECRET
+# - AZURE_REFRESH_TOKEN
