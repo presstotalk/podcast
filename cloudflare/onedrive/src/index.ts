@@ -4,9 +4,6 @@ export interface Env {
 }
 
 interface GetFileResult {
-  name: string
-  eTag: string
-  size: number
   id: string
   folder: string
   file: string
@@ -22,6 +19,10 @@ export default {
 		env: Env,
 		ctx: ExecutionContext
 	): Promise<Response> {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return new Response('method not allowed', { status: 405 })
+    }
+
     const pathname = extractPathnameFromRequest(request)
 
     const accessToken = await getAccessToken(env)
@@ -31,7 +32,8 @@ export default {
 
     const url = genOneDriveUrl(env, pathname)
     const res = await fetchFileData(url, accessToken)
-    return fetchOneDriveFile(res)
+    const headerOnly = request.method === "HEAD"
+    return fetchOneDriveFile(res, headerOnly)
 	},
 }
 
@@ -49,7 +51,7 @@ async function getAccessToken(env: Env): Promise<string | null> {
 }
 
 function genOneDriveUrl(env: Env, pathname: string): string {
-  return `${DRIVE_API_ENDPOINT}/root${wrapPathName(env, pathname)}?select=name,eTag,size,id,folder,file,%40microsoft.graph.downloadUrl&expand=children(select%3Dname,eTag,size,id,folder,file)`;
+  return `${DRIVE_API_ENDPOINT}/root${wrapPathName(env, pathname)}?select=id,folder,file,%40microsoft.graph.downloadUrl&expand=children(select%3Did,folder,file)`;
 }
 
 function wrapPathName(env: Env, pathname: string): string {
@@ -71,7 +73,7 @@ async function fetchFileData(url: string, accessToken: string): Promise<Response
   })
 }
 
-async function fetchOneDriveFile(res: Response): Promise<Response> {
+async function fetchOneDriveFile(res: Response, headerOnly: boolean): Promise<Response> {
   const body = await res.json<GetFileResult>()
 
   if (!res.ok) {
@@ -87,7 +89,12 @@ async function fetchOneDriveFile(res: Response): Promise<Response> {
   }
 
   const downloadUrl = body['@microsoft.graph.downloadUrl']
-  const remoteRes = await fetch(downloadUrl)
+  const remoteRes = await fetch(downloadUrl, { method: headerOnly ? 'HEAD' : 'GET' })
+
+  if (headerOnly) {
+    return new Response(null, remoteRes)
+  }
+
   const { readable, writable } = new TransformStream()
   remoteRes.body?.pipeTo(writable)
   return new Response(readable, remoteRes)
