@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 
 	"github.com/golang-module/carbon/v2"
@@ -62,7 +63,8 @@ func (r episodeRepository) ListAll(podcastId string) ([]*pod.Episode, error) {
 	episodes := make([]*pod.Episode, len(result.Records))
 
 	for i, record := range result.Records {
-		coverImage := os.Getenv("ASSETS_BASE_URL") + "/cover.jpg"
+		title := record.Fields["Title"].(string)
+		coverImage := getEpisodeAssetUrl(title, "cover.jpg")
 		publishedAt := carbon.Parse(record.Fields["Publish Time"].(string))
 		guid := getOptionalString(record.Fields["GUID"], record.ID)
 		slug := getOptionalString(record.Fields["Slug"], guid)
@@ -80,7 +82,7 @@ func (r episodeRepository) ListAll(podcastId string) ([]*pod.Episode, error) {
 			SeasonNumber:  getOptionalString(record.Fields["Season"], ""),
 			EpisodeNumber: getOptionalString(record.Fields["Episode"], ""),
 			CoverImageURL: &coverImage,
-			AudioURL:      os.Getenv("ASSETS_BASE_URL") + "/audio.mp3",
+			AudioURL:      getEpisodeAssetUrl(title, "audio.mp3"),
 		}
 	}
 
@@ -94,4 +96,8 @@ func getOptionalString(val interface{}, defVal string) string {
 	default:
 		return defVal
 	}
+}
+
+func getEpisodeAssetUrl(title, file string) string {
+	return os.Getenv("ASSETS_BASE_URL") + "/" + url.PathEscape(title) + "/" + file
 }
