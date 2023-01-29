@@ -4,10 +4,10 @@ IMAGE_TAG := "asia.gcr.io/presstotalk/api:${VERSION}"
 
 .PHONY: build
 build:
-	@docker build -t ${IMAGE_TAG} .
+	@docker buildx build --platform linux/amd64 -t ${IMAGE_TAG} .
 	@docker push ${IMAGE_TAG}
 
 
 .PHONY: deploy
 deploy:
-	@gcloud run deploy api --image ${IMAGE_TAG}
+	@gcloud run deploy api --region=asia-east1 --image=${IMAGE_TAG}

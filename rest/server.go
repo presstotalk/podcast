@@ -39,5 +39,5 @@ func Start() error {
 		return nil
 	})
 
-	return e.Start(":" + os.Getenv("SERVER_PORT"))
+	return e.Start(":" + os.Getenv("PORT"))
 }
