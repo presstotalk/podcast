@@ -63,11 +63,10 @@ func (r episodeRepository) ListAll(podcastId string) ([]*pod.Episode, error) {
 	episodes := make([]*pod.Episode, len(result.Records))
 
 	for i, record := range result.Records {
-		title := record.Fields["Title"].(string)
-		coverImage := getEpisodeAssetUrl(title, "cover.jpg")
-		publishedAt := carbon.Parse(record.Fields["Publish Time"].(string))
 		guid := getOptionalString(record.Fields["GUID"], record.ID)
 		slug := getOptionalString(record.Fields["Slug"], guid)
+		coverImage := getEpisodeAssetUrl(slug, "cover.jpg")
+		publishedAt := carbon.Parse(record.Fields["Publish Time"].(string))
 
 		episodes[i] = &pod.Episode{
 			GUID:  guid,
@@ -82,7 +81,7 @@ func (r episodeRepository) ListAll(podcastId string) ([]*pod.Episode, error) {
 			SeasonNumber:  getOptionalString(record.Fields["Season"], ""),
 			EpisodeNumber: getOptionalString(record.Fields["Episode"], ""),
 			CoverImageURL: &coverImage,
-			AudioURL:      getEpisodeAssetUrl(title, "audio.mp3"),
+			AudioURL:      getEpisodeAssetUrl(slug, "audio.mp3"),
 		}
 	}
 
@@ -98,6 +97,6 @@ func getOptionalString(val interface{}, defVal string) string {
 	}
 }
 
-func getEpisodeAssetUrl(title, file string) string {
-	return os.Getenv("ASSETS_BASE_URL") + "/" + url.PathEscape(title) + "/" + file
+func getEpisodeAssetUrl(slug, file string) string {
+	return os.Getenv("ASSETS_BASE_URL") + "/podcast/" + url.PathEscape(slug) + "/" + file
 }

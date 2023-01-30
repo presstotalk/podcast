@@ -69,6 +69,6 @@ func (p *podcastRepository) Get(id string) (*pod.Podacst, error) {
 			category := pod.NewCategory(val.(string))
 			return &category
 		}),
-		CoverImageURL: os.Getenv("ASSETS_BASE_URL") + "/cover.jpg",
+		CoverImageURL: os.Getenv("ASSETS_BASE_URL") + "/podcast/cover.jpg",
 	}, nil
 }

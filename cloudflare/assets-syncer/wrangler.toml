@@ -12,6 +12,6 @@ bucket_name = "presstotalk"
 preview_bucket_name = "presstotalk-preview"
 
 [vars]
-BASE_FOLDER = "/presstotalk/podcast"
+BASE_FOLDER = "/presstotalk"
 # The necessary secrets are:
 # - API_URL

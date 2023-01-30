@@ -1,2 +1,2 @@
-await remoteFetchAsync(`https://presstotalk-syncer.poying-me.workers.dev/cover.jpg`, { method: 'POST' })
+await remoteFetchAsync(`https://presstotalk-syncer.poying-me.workers.dev/podcast/cover.jpg`, { method: 'POST' })
 output.markdown(`success`)
