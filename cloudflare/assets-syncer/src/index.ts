@@ -25,18 +25,18 @@ export default {
       return new Response('method not allowed', { status: 405 })
     }
 
-    const pathname = extractPathnameFromRequest(request)
+    const { pathname, destPathanme } = extractPathnameFromRequest(request)
     console.info('sync file: ' + pathname)
 
     if (pathname === '/feeds/podcast.rss') {
       return handleFeed(env, pathname)
     }
 
-    return handleNormalFile(env, pathname)
+    return handleNormalFile(env, pathname, destPathanme)
 	},
 }
 
-async function handleNormalFile(env: Env, pathname: string): Promise<Response> {
+async function handleNormalFile(env: Env, pathname: string, destPathanme: string): Promise<Response> {
     const accessToken = await getAccessToken(env)
     if (!accessToken) {
       return new Response(`failed to retrieve tokens from database`, { status: 500 })
@@ -45,11 +45,15 @@ async function handleNormalFile(env: Env, pathname: string): Promise<Response> {
     const url = genOneDriveUrl(env, pathname)
     const res = await fetchFileData(url, accessToken)
     const fileRes = await fetchOneDriveFile(res)
-    return uploadToR2(env, pathname, fileRes)
+    return uploadToR2(env, destPathanme, fileRes)
 }
 
-function extractPathnameFromRequest(request: Request): string {
-  return new URL(request.url).pathname
+function extractPathnameFromRequest(request: Request): { pathname: string; destPathanme: string } {
+  const url = new URL(request.url)
+  return {
+    pathname: url.pathname,
+    destPathanme: url.searchParams.get('dest') ?? url.pathname,
+  }
 }
 
 async function getAccessToken(env: Env): Promise<string | null> {
@@ -103,12 +107,11 @@ async function fetchOneDriveFile(res: Response): Promise<Response> {
   return fetch(downloadUrl, { method: 'GET' })
 }
 
-async function uploadToR2(env: Env, pathname: string, res: Response): Promise<Response> {
+async function uploadToR2(env: Env, destPathanme: string, res: Response): Promise<Response> {
   if (!res.ok) {
     return res
   }
-  pathname = pathname.replace(/^\/*/, '')
-  await env.ASSETS_BUCKET.put(pathname, res.body)
+  await env.ASSETS_BUCKET.put(destPathanme, res.body)
   return new Response('success', { status: 200 })
 }
 
