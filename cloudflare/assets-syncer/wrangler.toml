@@ -1,0 +1,17 @@
+name = "presstotalk-syncer"
+main = "src/index.ts"
+compatibility_date = "2023-01-30"
+
+kv_namespaces = [
+    { binding = "AZURE", id = "8614081e75f54a21af058dc6a5e823f3", preview_id = "d5bc770724ca4ff7b9ca6dfea0015c72" }
+]
+
+[[r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "presstotalk"
+preview_bucket_name = "presstotalk-preview"
+
+[vars]
+BASE_FOLDER = "/presstotalk/podcast"
+# The necessary secrets are:
+# - API_URL

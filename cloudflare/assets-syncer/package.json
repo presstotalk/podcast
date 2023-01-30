@@ -1,5 +1,5 @@
 {
-  "name": "onedrive",
+  "name": "uploader",
   "version": "0.0.0",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20230115.0",
@@ -10,7 +10,5 @@
   "scripts": {
     "start": "wrangler dev",
     "deploy": "wrangler publish"
-  },
-  "dependencies": {
   }
 }

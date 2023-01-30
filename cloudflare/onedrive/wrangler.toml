@@ -1,9 +1,0 @@
-name = "presstotalk-assets"
-main = "src/index.ts"
-compatibility_date = "2023-01-28"
-kv_namespaces = [
-    { binding = "AZURE", id = "8614081e75f54a21af058dc6a5e823f3", preview_id = "d5bc770724ca4ff7b9ca6dfea0015c72" }
-]
-
-[vars]
-BASE_FOLDER = "/presstotalk/podcast"

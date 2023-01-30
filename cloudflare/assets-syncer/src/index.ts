@@ -1,6 +1,8 @@
 export interface Env {
   BASE_FOLDER: string
+  ASSETS_BUCKET: R2Bucket
   AZURE: KVNamespace
+  API_URL: string
 }
 
 interface GetFileResult {
@@ -19,17 +21,22 @@ export default {
 		env: Env,
 		ctx: ExecutionContext
 	): Promise<Response> {
-    const cachedFile = await caches.default.match(request)
-    if (cachedFile) {
-      return cachedFile
-    }
-
-    if (request.method !== 'GET' && request.method !== 'HEAD') {
+    if (request.method !== 'POST') {
       return new Response('method not allowed', { status: 405 })
     }
 
     const pathname = extractPathnameFromRequest(request)
+    console.info('sync file: ' + pathname)
 
+    if (pathname === '/feeds/podcast.rss') {
+      return handleFeed(env, pathname)
+    }
+
+    return handleNormalFile(env, pathname)
+	},
+}
+
+async function handleNormalFile(env: Env, pathname: string): Promise<Response> {
     const accessToken = await getAccessToken(env)
     if (!accessToken) {
       return new Response(`failed to retrieve tokens from database`, { status: 500 })
@@ -37,20 +44,12 @@ export default {
 
     const url = genOneDriveUrl(env, pathname)
     const res = await fetchFileData(url, accessToken)
-    const headerOnly = request.method === "HEAD"
-    const fileRes = await fetchOneDriveFile(res, headerOnly)
-    fileRes.headers.set('Cache-Control', 'public')
-
-    if (request.method === 'GET') {
-      await caches.default.put(request, fileRes.clone())
-    }
-
-    return fileRes
-	},
+    const fileRes = await fetchOneDriveFile(res)
+    return uploadToR2(env, pathname, fileRes)
 }
 
 function extractPathnameFromRequest(request: Request): string {
-  return decodeURIComponent(new URL(request.url).pathname).toLowerCase()
+  return new URL(request.url).pathname
 }
 
 async function getAccessToken(env: Env): Promise<string | null> {
@@ -85,7 +84,7 @@ async function fetchFileData(url: string, accessToken: string): Promise<Response
   })
 }
 
-async function fetchOneDriveFile(res: Response, headerOnly: boolean): Promise<Response> {
+async function fetchOneDriveFile(res: Response): Promise<Response> {
   const body = await res.json<GetFileResult>()
 
   if (!res.ok) {
@@ -101,13 +100,19 @@ async function fetchOneDriveFile(res: Response, headerOnly: boolean): Promise<Re
   }
 
   const downloadUrl = body['@microsoft.graph.downloadUrl']
-  const remoteRes = await fetch(downloadUrl, { method: headerOnly ? 'HEAD' : 'GET' })
+  return fetch(downloadUrl, { method: 'GET' })
+}
 
-  if (headerOnly) {
-    return new Response(null, remoteRes)
+async function uploadToR2(env: Env, pathname: string, res: Response): Promise<Response> {
+  if (!res.ok) {
+    return res
   }
+  pathname = pathname.replace(/^\/*/, '')
+  await env.ASSETS_BUCKET.put(pathname, res.body)
+  return new Response('success', { status: 200 })
+}
 
-  const { readable, writable } = new TransformStream()
-  remoteRes.body?.pipeTo(writable)
-  return new Response(readable, remoteRes)
+async function handleFeed(env: Env, pathname: string): Promise<Response> {
+  const res = await fetch(`${env.API_URL}/feeds/podcast`)
+  return uploadToR2(env, pathname, res)
 }
