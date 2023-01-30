@@ -117,5 +117,5 @@ async function uploadToR2(env: Env, destPathanme: string, res: Response): Promis
 
 async function handleFeed(env: Env, pathname: string): Promise<Response> {
   const res = await fetch(`${env.API_URL}/feeds/podcast`)
-  return uploadToR2(env, pathname, res)
+  return uploadToR2(env, pathname.replace(/^\/*/, ''), res)
 }
