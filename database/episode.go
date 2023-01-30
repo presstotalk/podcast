@@ -1,7 +1,6 @@
 package database
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -51,38 +50,56 @@ func (r episodeRepository) Create(podcastId string, episode *pod.Episode) error 
 
 func (r episodeRepository) ListAll(podcastId string) ([]*pod.Episode, error) {
 	table := r.db.GetTable(podcastId, EPISODES_TABLE)
-	result, err := table.GetRecords().FromView("Grid view").WithFilterFormula("Published").ReturnFields("Title", "Authors", "Description", "Publish Time", "Published", "Season", "Episode", "GUID", "Slug").Do()
-	if err != nil {
-		return nil, err
-	}
+	episodes := make([]*pod.Episode, 0)
+	pageSize := 100
+	offset := ""
 
-	if len(result.Records) < 1 {
-		return nil, errors.New("No podcast info")
-	}
-
-	episodes := make([]*pod.Episode, len(result.Records))
-
-	for i, record := range result.Records {
-		guid := getOptionalString(record.Fields["GUID"], record.ID)
-		slug := getOptionalString(record.Fields["Slug"], guid)
-		coverImage := getEpisodeAssetUrl(slug, "cover.jpg")
-		publishedAt := carbon.Parse(record.Fields["Publish Time"].(string))
-
-		episodes[i] = &pod.Episode{
-			GUID:  guid,
-			Title: record.Fields["Title"].(string),
-			URL:   fmt.Sprintf(os.Getenv("EPISODE_URL"), slug),
-			Authors: lo.Map(record.Fields["Authors"].([]interface{}), func(val interface{}, _ int) *pod.Author {
-				author := pod.NewAuthor(val.(string))
-				return &author
-			}),
-			Description:   record.Fields["Description"].(string),
-			PublishedAt:   publishedAt.ToStdTime(),
-			SeasonNumber:  getOptionalString(record.Fields["Season"], ""),
-			EpisodeNumber: getOptionalString(record.Fields["Episode"], ""),
-			CoverImageURL: &coverImage,
-			AudioURL:      getEpisodeAssetUrl(slug, "audio.mp3"),
+	for true {
+		result, err := table.
+			GetRecords().
+			FromView("Grid view").
+			WithFilterFormula("Published").
+			ReturnFields("Title", "Authors", "Description", "Publish Time", "Published", "Season", "Episode", "GUID", "Slug").
+			WithOffset(offset).
+			PageSize(pageSize).
+			Do()
+		if err != nil {
+			return nil, err
 		}
+
+		if len(result.Records) < 1 {
+			break
+		}
+
+		for _, record := range result.Records {
+			guid := getOptionalString(record.Fields["GUID"], record.ID)
+			slug := getOptionalString(record.Fields["Slug"], guid)
+			coverImage := getEpisodeAssetUrl(slug, "cover.jpg")
+			publishedAt := carbon.Parse(record.Fields["Publish Time"].(string))
+
+			episode := &pod.Episode{
+				GUID:  guid,
+				Title: record.Fields["Title"].(string),
+				URL:   fmt.Sprintf(os.Getenv("EPISODE_URL"), slug),
+				Authors: lo.Map(record.Fields["Authors"].([]interface{}), func(val interface{}, _ int) *pod.Author {
+					author := pod.NewAuthor(val.(string))
+					return &author
+				}),
+				Description:   record.Fields["Description"].(string),
+				PublishedAt:   publishedAt.ToStdTime(),
+				SeasonNumber:  getOptionalString(record.Fields["Season"], ""),
+				EpisodeNumber: getOptionalString(record.Fields["Episode"], ""),
+				CoverImageURL: &coverImage,
+				AudioURL:      getEpisodeAssetUrl(slug, "audio.mp3"),
+			}
+
+			episodes = append(episodes, episode)
+		}
+
+		if result.Offset == "" {
+			break
+		}
+		offset = result.Offset
 	}
 
 	return episodes, nil
