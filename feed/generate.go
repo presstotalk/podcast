@@ -32,6 +32,10 @@ func Generate(podcast *podcast.Podacst) ([]byte, error) {
 			item.AddImage(*episode.CoverImageURL)
 		}
 		item.AddEnclosure(episode.AudioURL, rss.MP3, episode.AudioSize)
+		item.Author = &rss.Author{
+			Name:  episode.Authors[0].Name,
+			Email: episode.Authors[0].Email,
+		}
 		feed.AddItem(item)
 	}
 
