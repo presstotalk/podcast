@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 
@@ -76,6 +77,7 @@ func (r episodeRepository) ListAll(podcastId string) ([]*pod.Episode, error) {
 			slug := getOptionalString(record.Fields["Slug"], guid)
 			coverImage := getEpisodeAssetUrl(slug, "cover.jpg")
 			publishedAt := carbon.Parse(record.Fields["Publish Time"].(string))
+			audioURL := getEpisodeAssetUrl(slug, "audio.mp3")
 
 			episode := &pod.Episode{
 				GUID:  guid,
@@ -90,7 +92,8 @@ func (r episodeRepository) ListAll(podcastId string) ([]*pod.Episode, error) {
 				SeasonNumber:  getOptionalString(record.Fields["Season"], ""),
 				EpisodeNumber: getOptionalString(record.Fields["Episode"], ""),
 				CoverImageURL: &coverImage,
-				AudioURL:      getEpisodeAssetUrl(slug, "audio.mp3"),
+				AudioURL:      audioURL,
+				AudioSize:     getFileSizeFromURL(audioURL),
 			}
 
 			episodes = append(episodes, episode)
@@ -116,4 +119,12 @@ func getOptionalString(val interface{}, defVal string) string {
 
 func getEpisodeAssetUrl(slug, file string) string {
 	return os.Getenv("ASSETS_BASE_URL") + "/podcast/" + url.PathEscape(slug) + "/" + file
+}
+
+func getFileSizeFromURL(url string) int64 {
+	res, err := http.Head(url)
+	if err != nil {
+		return 0
+	}
+	return res.ContentLength
 }
